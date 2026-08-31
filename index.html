@@ -272,7 +272,7 @@
             const duk = filterDukuh.value;
 
             filteredData = allData.filter(row => {
-                const nNama = getVal(row, ['NAMA_PEMILIH', 'NAMA PEMILIH']).toLowerCase();
+                const nNama = getVal(row, ['NAMA', 'NAMA']).toLowerCase();
                 const nNik = getVal(row, ['NIK', 'NOMOR_PEMILIH']).toLowerCase();
                 const nAlamat = getVal(row, ['ALAMAT']).toLowerCase();
                 const nKecamatan = getVal(row, ['KECAMATAN']).toUpperCase();
@@ -319,7 +319,7 @@
                 const col = document.createElement('div');
                 col.className = 'col-md-6 col-lg-4 col-12';
                 
-                const nama = getVal(row, ['NAMA_PEMILIH', 'NAMA PEMILIH']);
+                const nama = getVal(row, ['NAMA', 'NAMA']);
                 const nik = getVal(row, ['NIK', 'NOMOR_PEMILIH']);
                 const tempatLahir = getVal(row, ['TEMPAT_LAHIR', 'TEMPAT LAHIR']);
                 const tanggalLahir = getVal(row, ['TANGGAL_LAHIR', 'TANGGAL LAHIR']);
@@ -394,10 +394,10 @@
         // Dummy Data Generator (Sesuai Kolom Baru)
         function generateDummyData() {
             allData = [
-                {NAMA_PEMILIH: 'SRI WAHYANTO', NIK: '3310191702630001', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '17/02/1963', UMUR: '48', "JENIS KELAMIN": 'L'},
-                {NAMA_PEMILIH: 'MUJIAH', NIK: '3310195804700001', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'BANYUMAS', TANGGAL_LAHIR: '18/04/1970', UMUR: '40', "JENIS KELAMIN": 'P'},
-                {NAMA_PEMILIH: 'SLAMET WIDODO', NIK: '3310190911630002', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '09/11/1963', UMUR: '47', "JENIS KELAMIN": 'L'},
-                {NAMA_PEMILIH: 'AHMAD SUBARJO', NIK: '3310191234560000', ALAMAT: 'SUDIMORO, RT: 002, RW: 001', DESA: 'SUDIMORO', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '01/01/1980', UMUR: '30', "JENIS KELAMIN": 'L'}
+                {NAMA: 'SRI WAHYANTO', NIK: '3310191702630001', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '17/02/1963', UMUR: '48', "JENIS KELAMIN": 'L'},
+                {NAMA: 'MUJIAH', NIK: '3310195804700001', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'BANYUMAS', TANGGAL_LAHIR: '18/04/1970', UMUR: '40', "JENIS KELAMIN": 'P'},
+                {NAMA: 'SLAMET WIDODO', NIK: '3310190911630002', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '09/11/1963', UMUR: '47', "JENIS KELAMIN": 'L'},
+                {NAMA: 'AHMAD SUBARJO', NIK: '3310191234560000', ALAMAT: 'SUDIMORO, RT: 002, RW: 001', DESA: 'SUDIMORO', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '01/01/1980', UMUR: '30', "JENIS KELAMIN": 'L'}
             ];
             processFilters();
             applyFilter();
