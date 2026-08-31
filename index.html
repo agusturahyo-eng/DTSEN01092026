@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Data Penduduk</title>
+    <!-- Bootstrap 5 CSS untuk Tampilan Responsif Android -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .filter-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: none;
+        }
+        .data-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 5px solid #2a5298;
+            transition: transform 0.2s;
+        }
+        .data-card:active {
+            transform: scale(0.98);
+        }
+        .data-card h5 {
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+        .data-card p {
+            margin-bottom: 2px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .badge-info {
+            background-color: #e9ecef;
+            color: #495057;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-top: 8px;
+        }
+        #loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner-border {
+            color: #2a5298;
+        }
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2a5298;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-decoration: none;
+            display: none;
+            z-index: 1000;
+        }
+        .info-label {
+            width: 90px;
+            display: inline-block;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header text-center">
+        <div class="container">
+            <h3 class="mb-0"><i class="fas fa-users"></i> Data Pemilih Tetap</h3>
+            <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Pencarian & Filter Mobile-Friendly</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Area Filter dan Pencarian -->
+        <div class="card filter-card">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Cari Nama, NIK, atau Alamat..." autocomplete="off">
+                    </div>
+                </div>
+                
+                <div class="col-md-4 col-12">
+                    <label class="form-label text-muted small mb-1">Kecamatan</label>
+                    <select id="filterKecamatan" class="form-select">
+                        <option value="">Semua Kecamatan</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4 col-12">
+                    <label class="form-label text-muted small mb-1">Desa</label>
+                    <select id="filterDesa" class="form-select">
+                        <option value="">Semua Desa</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4 col-12">
+                    <label class="form-label text-muted small mb-1">Dukuh / RT RW</label>
+                    <select id="filterDukuh" class="form-select">
+                        <option value="">Semua Dukuh</option>
+                    </select>
+                </div>
+                
+                <div class="col-12 text-end mt-3">
+                    <span id="resultCount" class="badge bg-primary rounded-pill p-2 px-3">Memuat data...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indikator Loading -->
+        <div id="loading">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Mengambil data dari Google Sheet...</p>
+        </div>
+
+        <!-- Kontainer Hasil Data -->
+        <div id="dataContainer" class="row">
+            <!-- Data Cards akan di-generate di sini via JavaScript -->
+        </div>
+
+        <!-- Tombol Muat Lebih Banyak (Pagination agar Android ringan) -->
+        <div class="text-center mb-5 d-none" id="loadMoreContainer">
+            <button id="btnLoadMore" class="btn btn-outline-primary px-4 py-2 rounded-pill">
+                <i class="fas fa-sync-alt"></i> Tampilkan Lebih Banyak
+            </button>
+        </div>
+    </div>
+
+    <a href="#" class="fab" id="fabBtn"><i class="fas fa-arrow-up"></i></a>
+
+    <!-- PapaParse untuk membaca CSV dari Google Sheets -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <script>
+        // ==============================================================================
+        // PASTE LINK CSV GOOGLE SHEET ANDA DI SINI
+        // ==============================================================================
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQXXXXXXXXXXXXX_CONTOH_LINK_PUBLISH_CSV_ANDA/pub?output=csv';
+        
+        let allData = [];
+        let filteredData = [];
+        
+        const itemsPerPage = 30;
+        let currentPage = 1;
+
+        // Elemen DOM
+        const dataContainer = document.getElementById('dataContainer');
+        const loading = document.getElementById('loading');
+        const searchInput = document.getElementById('searchInput');
+        const filterKecamatan = document.getElementById('filterKecamatan');
+        const filterDesa = document.getElementById('filterDesa');
+        const filterDukuh = document.getElementById('filterDukuh');
+        const resultCount = document.getElementById('resultCount');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const btnLoadMore = document.getElementById('btnLoadMore');
+        const fabBtn = document.getElementById('fabBtn');
+
+        // Helper Function untuk membaca value kolom (fleksibel spasi/underscore)
+        function getVal(row, keyNames) {
+            for (let name of keyNames) {
+                if (row[name] !== undefined && row[name] !== null) {
+                    return String(row[name]).trim();
+                }
+            }
+            return '';
+        }
+
+        // 1. Ambil Data dari Google Sheets
+        function fetchData() {
+            if(csvUrl.includes('CONTOH_LINK')) {
+                generateDummyData();
+                return;
+            }
+
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    allData = results.data.filter(row => {
+                        const nama = getVal(row, ['NAMA_PEMILIH', 'NAMA PEMILIH']);
+                        return nama !== '';
+                    });
+                    processFilters();
+                    applyFilter();
+                },
+                error: function(error) {
+                    loading.innerHTML = `<div class="alert alert-danger">Gagal memuat data. Pastikan link Google Sheet CSV sudah benar dan dipublikasikan.</div>`;
+                    console.error("Error fetching CSV: ", error);
+                }
+            });
+        }
+
+        // 2. Ekstrak nilai unik untuk dropdown (Kecamatan, Desa, Dukuh/Alamat)
+        function processFilters() {
+            const kecamatans = new Set();
+            const desas = new Set();
+            const dukuhs = new Set();
+
+            allData.forEach(row => {
+                const kec = getVal(row, ['KECAMATAN']);
+                const des = getVal(row, ['DESA']);
+                const alm = getVal(row, ['ALAMAT']);
+
+                if(kec) kecamatans.add(kec.toUpperCase());
+                if(des) desas.add(des.toUpperCase());
+                if(alm) {
+                    let dukuh = alm.toUpperCase().split(',')[0].split(' RT')[0].trim();
+                    if(dukuh) dukuhs.add(dukuh);
+                }
+            });
+
+            populateDropdown(filterKecamatan, [...kecamatans].sort(), "Semua Kecamatan");
+            populateDropdown(filterDesa, [...desas].sort(), "Semua Desa");
+            populateDropdown(filterDukuh, [...dukuhs].sort(), "Semua Dukuh");
+        }
+
+        function populateDropdown(selectElement, items, defaultText) {
+            selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+            items.forEach(item => {
+                if(item) {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    option.textContent = item;
+                    selectElement.appendChild(option);
+                }
+            });
+        }
+
+        // 3. Fungsi Filter dan Pencarian Utama
+        function applyFilter() {
+            const query = searchInput.value.toLowerCase().trim();
+            const kec = filterKecamatan.value;
+            const des = filterDesa.value;
+            const duk = filterDukuh.value;
+
+            filteredData = allData.filter(row => {
+                const nNama = getVal(row, ['NAMA_PEMILIH', 'NAMA PEMILIH']).toLowerCase();
+                const nNik = getVal(row, ['NIK', 'NOMOR_PEMILIH']).toLowerCase();
+                const nAlamat = getVal(row, ['ALAMAT']).toLowerCase();
+                const nKecamatan = getVal(row, ['KECAMATAN']).toUpperCase();
+                const nDesa = getVal(row, ['DESA']).toUpperCase();
+                
+                const matchSearch = nNama.includes(query) || nNik.includes(query) || nAlamat.includes(query);
+                const matchKec = kec === "" || nKecamatan === kec;
+                const matchDesa = des === "" || nDesa === des;
+                const matchDukuh = duk === "" || nAlamat.toUpperCase().includes(duk);
+
+                return matchSearch && matchKec && matchDesa && matchDukuh;
+            });
+
+            currentPage = 1;
+            renderData(true);
+        }
+
+        // 4. Render Data ke HTML sesuai Kolom Baru
+        function renderData(resetContainer = false) {
+            loading.style.display = 'none';
+            
+            if(resetContainer) {
+                dataContainer.innerHTML = '';
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const dataToShow = filteredData.slice(startIndex, endIndex);
+
+            if(filteredData.length === 0) {
+                dataContainer.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-search-minus fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Tidak ada data ditemukan</h5>
+                    </div>`;
+                resultCount.textContent = "0 Data";
+                loadMoreContainer.classList.add('d-none');
+                return;
+            }
+
+            resultCount.textContent = `Menampilkan ${Math.min(endIndex, filteredData.length)} dari ${filteredData.length} data`;
+
+            dataToShow.forEach(row => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 col-12';
+                
+                const nama = getVal(row, ['NAMA_PEMILIH', 'NAMA PEMILIH']);
+                const nik = getVal(row, ['NIK', 'NOMOR_PEMILIH']);
+                const tempatLahir = getVal(row, ['TEMPAT_LAHIR', 'TEMPAT LAHIR']);
+                const tanggalLahir = getVal(row, ['TANGGAL_LAHIR', 'TANGGAL LAHIR']);
+                const umur = getVal(row, ['UMUR']);
+                const jkRaw = getVal(row, ['JENIS KELAMIN', 'JENIS_KELAMIN', 'JK']);
+                const alamat = getVal(row, ['ALAMAT']);
+                const desa = getVal(row, ['DESA']);
+                const kecamatan = getVal(row, ['KECAMATAN']);
+
+                // Deteksi Gender (Lk / Pr / L / P)
+                let jkDisplay = jkRaw || '-';
+                let jkIcon = '<i class="fas fa-user text-secondary"></i>';
+                if (jkRaw.toUpperCase().startsWith('L')) {
+                    jkDisplay = 'Laki-Laki';
+                    jkIcon = '<i class="fas fa-male text-primary"></i>';
+                } else if (jkRaw.toUpperCase().startsWith('P')) {
+                    jkDisplay = 'Perempuan';
+                    jkIcon = '<i class="fas fa-female text-danger"></i>';
+                }
+
+                // Formatting Tanggal Lahir
+                let tglFormatted = tanggalLahir ? tanggalLahir.split(' ')[0] : '-';
+
+                col.innerHTML = `
+                    <div class="data-card">
+                        <h5>${nama || '-'}</h5>
+                        <p><span class="info-label text-muted">NIK</span> : <strong>${nik || '-'}</strong></p>
+                        <p><span class="info-label text-muted">TTL</span> : ${tempatLahir || '-'}, ${tglFormatted}</p>
+                        <p><span class="info-label text-muted">Gender</span> : ${jkIcon} ${jkDisplay} ${umur ? '(' + umur + ' thn)' : ''}</p>
+                        <hr style="margin: 8px 0; opacity: 0.1;">
+                        <p><i class="fas fa-map-marker-alt text-danger"></i> ${alamat || '-'}</p>
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="badge-info"><i class="fas fa-home"></i> Ds. ${desa || '-'}</span>
+                            <span class="badge-info"><i class="fas fa-map"></i> Kec. ${kecamatan || '-'}</span>
+                        </div>
+                    </div>
+                `;
+                dataContainer.appendChild(col);
+            });
+
+            if(endIndex < filteredData.length) {
+                loadMoreContainer.classList.remove('d-none');
+            } else {
+                loadMoreContainer.classList.add('d-none');
+            }
+        }
+
+        // 5. Event Listeners
+        searchInput.addEventListener('input', applyFilter);
+        filterKecamatan.addEventListener('change', applyFilter);
+        filterDesa.addEventListener('change', applyFilter);
+        filterDukuh.addEventListener('change', applyFilter);
+        
+        btnLoadMore.addEventListener('click', () => {
+            currentPage++;
+            renderData(false);
+        });
+
+        // FAB Scroll to Top
+        window.onscroll = function() {
+            if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                fabBtn.style.display = "flex";
+            } else {
+                fabBtn.style.display = "none";
+            }
+        };
+        fabBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        });
+
+        // Dummy Data Generator (Sesuai Kolom Baru)
+        function generateDummyData() {
+            allData = [
+                {NAMA_PEMILIH: 'SRI WAHYANTO', NIK: '3310191702630001', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '17/02/1963', UMUR: '48', "JENIS KELAMIN": 'L'},
+                {NAMA_PEMILIH: 'MUJIAH', NIK: '3310195804700001', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'BANYUMAS', TANGGAL_LAHIR: '18/04/1970', UMUR: '40', "JENIS KELAMIN": 'P'},
+                {NAMA_PEMILIH: 'SLAMET WIDODO', NIK: '3310190911630002', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '09/11/1963', UMUR: '47', "JENIS KELAMIN": 'L'},
+                {NAMA_PEMILIH: 'AHMAD SUBARJO', NIK: '3310191234560000', ALAMAT: 'SUDIMORO, RT: 002, RW: 001', DESA: 'SUDIMORO', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '01/01/1980', UMUR: '30', "JENIS KELAMIN": 'L'}
+            ];
+            processFilters();
+            applyFilter();
+        }
+
+        window.onload = fetchData;
+    </script>
+</body>
+</html>
