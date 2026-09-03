@@ -169,7 +169,7 @@
     <!-- PapaParse untuk membaca CSV dari Google Sheets -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
-    <script>
+   <script>
         // ==============================================================================
         // PASTE LINK CSV GOOGLE SHEET ANDA DI SINI
         // ==============================================================================
@@ -219,7 +219,7 @@
                         const nama = getVal(row, ['NAMA_PEMILIH', 'NAMA PEMILIH']);
                         return nama !== '';
                     });
-                    processFilters();
+                    initFilters(); // Inisialisasi filter pertama kali
                     applyFilter();
                 },
                 error: function(error) {
@@ -229,28 +229,78 @@
             });
         }
 
-        // 2. Ekstrak nilai unik untuk dropdown (Kecamatan, Desa, Dukuh/Alamat)
-        function processFilters() {
+        // 2A. Inisialisasi Filter Kecamatan (Hanya dijalankan sekali di awal)
+        function initFilters() {
             const kecamatans = new Set();
-            const desas = new Set();
-            const dukuhs = new Set();
-
             allData.forEach(row => {
                 const kec = getVal(row, ['KECAMATAN']);
-                const des = getVal(row, ['DESA']);
-                const alm = getVal(row, ['ALAMAT']);
-
                 if(kec) kecamatans.add(kec.toUpperCase());
-                if(des) desas.add(des.toUpperCase());
-                if(alm) {
+            });
+
+            populateDropdown(filterKecamatan, [...kecamatans].sort(), "Semua Kecamatan");
+            
+            // Panggil fungsi update desa untuk mengisi default desa & dukuh
+            updateDesaDropdown();
+        }
+
+        // 2B. Update Dropdown Desa Berdasarkan Kecamatan yang Dipilih
+        function updateDesaDropdown() {
+            const selectedKec = filterKecamatan.value;
+            const desas = new Set();
+            
+            allData.forEach(row => {
+                const kec = getVal(row, ['KECAMATAN']).toUpperCase();
+                const des = getVal(row, ['DESA']);
+                
+                // Jika kecamatan cocok (atau semua kecamatan dipilih)
+                if ((selectedKec === "" || kec === selectedKec) && des) {
+                    desas.add(des.toUpperCase());
+                }
+            });
+            
+            // Simpan pilihan desa saat ini (jika masih valid)
+            const currentDesa = filterDesa.value;
+            populateDropdown(filterDesa, [...desas].sort(), "Semua Desa");
+            
+            if (desas.has(currentDesa)) {
+                filterDesa.value = currentDesa;
+            } else {
+                filterDesa.value = ""; // Reset jika desa tidak ada di kecamatan terpilih
+            }
+            
+            // Lanjutkan dengan mengupdate dropdown Dukuh
+            updateDukuhDropdown();
+        }
+
+        // 2C. Update Dropdown Dukuh Berdasarkan Desa dan Kecamatan yang Dipilih
+        function updateDukuhDropdown() {
+            const selectedKec = filterKecamatan.value;
+            const selectedDesa = filterDesa.value;
+            const dukuhs = new Set();
+            
+            allData.forEach(row => {
+                const kec = getVal(row, ['KECAMATAN']).toUpperCase();
+                const des = getVal(row, ['DESA']).toUpperCase();
+                const alm = getVal(row, ['ALAMAT']);
+                
+                const matchKec = selectedKec === "" || kec === selectedKec;
+                const matchDesa = selectedDesa === "" || des === selectedDesa;
+                
+                if (matchKec && matchDesa && alm) {
                     let dukuh = alm.toUpperCase().split(',')[0].split(' RT')[0].trim();
                     if(dukuh) dukuhs.add(dukuh);
                 }
             });
-
-            populateDropdown(filterKecamatan, [...kecamatans].sort(), "Semua Kecamatan");
-            populateDropdown(filterDesa, [...desas].sort(), "Semua Desa");
+            
+            // Simpan pilihan dukuh saat ini (jika masih valid)
+            const currentDukuh = filterDukuh.value;
             populateDropdown(filterDukuh, [...dukuhs].sort(), "Semua Dukuh");
+            
+            if (dukuhs.has(currentDukuh)) {
+                filterDukuh.value = currentDukuh;
+            } else {
+                filterDukuh.value = "";
+            }
         }
 
         function populateDropdown(selectElement, items, defaultText) {
@@ -368,10 +418,22 @@
             }
         }
 
-        // 5. Event Listeners
+        // 5. Event Listeners (DIUBAH UNTUK CASCADING DROPDOWN)
         searchInput.addEventListener('input', applyFilter);
-        filterKecamatan.addEventListener('change', applyFilter);
-        filterDesa.addEventListener('change', applyFilter);
+        
+        // Ketika Kecamatan diubah -> Update list Desa -> lalu filter data
+        filterKecamatan.addEventListener('change', () => {
+            updateDesaDropdown();
+            applyFilter();
+        });
+        
+        // Ketika Desa diubah -> Update list Dukuh -> lalu filter data
+        filterDesa.addEventListener('change', () => {
+            updateDukuhDropdown();
+            applyFilter();
+        });
+        
+        // Ketika Dukuh diubah -> Langsung filter data
         filterDukuh.addEventListener('change', applyFilter);
         
         btnLoadMore.addEventListener('click', () => {
@@ -400,11 +462,9 @@
                 {NAMA_PEMILIH: 'SLAMET WIDODO', NIK: '3310190911630002', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '09/11/1963', UMUR: '47', "JENIS KELAMIN": 'L'},
                 {NAMA_PEMILIH: 'AHMAD SUBARJO', NIK: '3310191234560000', ALAMAT: 'SUDIMORO, RT: 002, RW: 001', DESA: 'SUDIMORO', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '01/01/1980', UMUR: '30', "JENIS KELAMIN": 'L'}
             ];
-            processFilters();
+            initFilters();
             applyFilter();
         }
 
         window.onload = fetchData;
     </script>
-</body>
-</html>
