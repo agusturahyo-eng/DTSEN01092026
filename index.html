@@ -113,6 +113,10 @@
                     <div class="input-group">
                         <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
                         <input type="text" id="searchInput" class="form-control" placeholder="Cari Nama, NIK, atau Alamat..." autocomplete="off">
+                        <!-- TAMBAHAN: Tombol Refresh -->
+                        <button class="btn btn-primary" type="button" id="btnRefresh" title="Refresh Data">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </div>
                 
@@ -159,7 +163,7 @@
         <!-- Tombol Muat Lebih Banyak (Pagination agar Android ringan) -->
         <div class="text-center mb-5 d-none" id="loadMoreContainer">
             <button id="btnLoadMore" class="btn btn-outline-primary px-4 py-2 rounded-pill">
-                <i class="fas fa-sync-alt"></i> Tampilkan Lebih Banyak
+                <i class="fas fa-chevron-down"></i> Tampilkan Lebih Banyak
             </button>
         </div>
     </div>
@@ -191,6 +195,7 @@
         const resultCount = document.getElementById('resultCount');
         const loadMoreContainer = document.getElementById('loadMoreContainer');
         const btnLoadMore = document.getElementById('btnLoadMore');
+        const btnRefresh = document.getElementById('btnRefresh'); // TAMBAHAN DOM REFRESH
         const fabBtn = document.getElementById('fabBtn');
 
         // Helper Function untuk membaca value kolom (fleksibel spasi/underscore)
@@ -205,6 +210,12 @@
 
         // 1. Ambil Data dari Google Sheets
         function fetchData() {
+            // Tampilkan loading saat fetch data
+            loading.style.display = 'block';
+            dataContainer.innerHTML = '';
+            loadMoreContainer.classList.add('d-none');
+            resultCount.textContent = "Memuat data...";
+
             if(csvUrl.includes('CONTOH_LINK')) {
                 generateDummyData();
                 return;
@@ -229,7 +240,7 @@
             });
         }
 
-        // 2A. Inisialisasi Filter Kecamatan (Hanya dijalankan sekali di awal)
+        // 2A. Inisialisasi Filter Kecamatan
         function initFilters() {
             const kecamatans = new Set();
             allData.forEach(row => {
@@ -238,8 +249,6 @@
             });
 
             populateDropdown(filterKecamatan, [...kecamatans].sort(), "Semua Kecamatan");
-            
-            // Panggil fungsi update desa untuk mengisi default desa & dukuh
             updateDesaDropdown();
         }
 
@@ -252,23 +261,20 @@
                 const kec = getVal(row, ['KECAMATAN']).toUpperCase();
                 const des = getVal(row, ['DESA']);
                 
-                // Jika kecamatan cocok (atau semua kecamatan dipilih)
                 if ((selectedKec === "" || kec === selectedKec) && des) {
                     desas.add(des.toUpperCase());
                 }
             });
             
-            // Simpan pilihan desa saat ini (jika masih valid)
             const currentDesa = filterDesa.value;
             populateDropdown(filterDesa, [...desas].sort(), "Semua Desa");
             
             if (desas.has(currentDesa)) {
                 filterDesa.value = currentDesa;
             } else {
-                filterDesa.value = ""; // Reset jika desa tidak ada di kecamatan terpilih
+                filterDesa.value = "";
             }
             
-            // Lanjutkan dengan mengupdate dropdown Dukuh
             updateDukuhDropdown();
         }
 
@@ -292,7 +298,6 @@
                 }
             });
             
-            // Simpan pilihan dukuh saat ini (jika masih valid)
             const currentDukuh = filterDukuh.value;
             populateDropdown(filterDukuh, [...dukuhs].sort(), "Semua Dukuh");
             
@@ -380,7 +385,6 @@
                 const desa = getVal(row, ['DESA']);
                 const kecamatan = getVal(row, ['KECAMATAN']);
 
-                // Deteksi Gender (Lk / Pr / L / P)
                 let jkDisplay = jkRaw || '-';
                 let jkIcon = '<i class="fas fa-user text-secondary"></i>';
                 if (jkRaw.toUpperCase().startsWith('L')) {
@@ -391,7 +395,6 @@
                     jkIcon = '<i class="fas fa-female text-danger"></i>';
                 }
 
-                // Formatting Tanggal Lahir
                 let tglFormatted = tanggalLahir ? tanggalLahir.split(' ')[0] : '-';
 
                 col.innerHTML = `
@@ -418,27 +421,40 @@
             }
         }
 
-        // 5. Event Listeners (DIUBAH UNTUK CASCADING DROPDOWN)
+        // 5. Event Listeners
         searchInput.addEventListener('input', applyFilter);
         
-        // Ketika Kecamatan diubah -> Update list Desa -> lalu filter data
         filterKecamatan.addEventListener('change', () => {
             updateDesaDropdown();
             applyFilter();
         });
         
-        // Ketika Desa diubah -> Update list Dukuh -> lalu filter data
         filterDesa.addEventListener('change', () => {
             updateDukuhDropdown();
             applyFilter();
         });
         
-        // Ketika Dukuh diubah -> Langsung filter data
         filterDukuh.addEventListener('change', applyFilter);
         
         btnLoadMore.addEventListener('click', () => {
             currentPage++;
             renderData(false);
+        });
+
+        // ========================================================================
+        // EVENT LISTENER UNTUK TOMBOL REFRESH
+        // ========================================================================
+        btnRefresh.addEventListener('click', () => {
+            // Animasi putar ikon sesaat
+            const icon = btnRefresh.querySelector('i');
+            icon.classList.add('fa-spin');
+            setTimeout(() => icon.classList.remove('fa-spin'), 1000);
+
+            // Kosongkan input pencarian
+            searchInput.value = '';
+            
+            // Panggil ulang data dari awal
+            fetchData();
         });
 
         // FAB Scroll to Top
@@ -454,7 +470,6 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         });
 
-        // Dummy Data Generator (Sesuai Kolom Baru)
         function generateDummyData() {
             allData = [
                 {NAMA_PEMILIH: 'SRI WAHYANTO', NIK: '3310191702630001', ALAMAT: 'KAJEN, RT: 001, RW: 001', DESA: 'DALANGAN', KECAMATAN: 'TULUNG', TEMPAT_LAHIR: 'KLATEN', TANGGAL_LAHIR: '17/02/1963', UMUR: '48', "JENIS KELAMIN": 'L'},
@@ -468,3 +483,5 @@
 
         window.onload = fetchData;
     </script>
+</body>
+</html>
